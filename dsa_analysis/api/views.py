@@ -1,10 +1,33 @@
-# views.py
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from .serializers import RegisterSerializer
+from .serializers import RegisterSerializer, QuestionSerializer
+from rest_framework_simplejwt.views import TokenRefreshView
+from .models import Question
+
+
+class QuestionListAPIView(generics.ListAPIView):
+    serializer_class = QuestionSerializer
+    queryset = Question.objects.all()
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        category = self.request.query_params.get("category")
+        if category:
+            queryset = queryset.filter(category__name__iexact=category)
+        return queryset
+
+
+class QuestionRetrieveAPIView(generics.RetrieveAPIView):
+    """
+    API endpoint that retrieves a single question by its slug.
+    """
+
+    serializer_class = QuestionSerializer
+    queryset = Question.objects.all()
+    lookup_field = "slug"
 
 
 class RegisterView(generics.CreateAPIView):
@@ -70,3 +93,32 @@ class CurrentUserView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class CustomTokenRefreshView(TokenRefreshView):
+    def post(self, request, *args, **kwargs):
+        # Extract refresh token from cookie
+        refresh_token = request.COOKIES.get("refresh_token")
+
+        if not refresh_token:
+            return Response(
+                {"detail": "Refresh token missing"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        # Add refresh token to request data
+        request.data["refresh"] = refresh_token
+
+        # Proceed with normal token refresh
+        response = super().post(request, *args, **kwargs)
+
+        if response.status_code == 200:
+            # Set new access token in cookie
+            response.set_cookie(
+                "access_token",
+                response.data["access"],
+                httponly=True,
+                secure=False,
+                samesite="Lax",
+            )
+
+        return response

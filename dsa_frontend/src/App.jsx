@@ -4,10 +4,11 @@ import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
-import HomePage from "./pages/HomePage";
 import { ThemeProvider } from "@mui/material";
 import { CssBaseline } from "@mui/material";
 import theme from "./theme";
+import Dashboard from "./pages/Dashboard";
+import QuestionPage from "./pages/QuestionPage";
 
 function App() {
   return (
@@ -22,7 +23,8 @@ function App() {
 
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<HomePage />} />
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/question/:slug" element={<QuestionPage />} />
             </Route>
           </Routes>
         </Router>

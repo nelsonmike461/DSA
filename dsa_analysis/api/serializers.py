@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from .models import Question, Category
 
 User = get_user_model()
 
@@ -22,3 +23,27 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.set_password(validated_data["password"])
         user.save()
         return user
+
+
+class QuestionSerializer(serializers.ModelSerializer):
+    # Represent the category as its name
+    category = serializers.SlugRelatedField(
+        queryset=Category.objects.all(), slug_field="name"
+    )
+
+    class Meta:
+        model = Question
+        fields = (
+            "title",
+            "slug",
+            "category",
+            "description",
+            "input_format",
+            "output_format",
+            "constraints",
+            "sample_input",
+            "sample_output",
+            "difficulty",
+            "created_at",
+            "updated_at",
+        )

@@ -1,6 +1,6 @@
-# api/models.py
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
+from django.utils.text import slugify
 
 
 class CustomUserManager(BaseUserManager):
@@ -21,3 +21,72 @@ class User(AbstractUser):
     objects = CustomUserManager()
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = []
+
+
+class Category(models.Model):
+    name = models.CharField(
+        max_length=100,
+        unique=True,
+        help_text="Name of the category (e.g., Arrays, Strings)",
+    )
+    slug = models.SlugField(max_length=100, unique=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        # Auto-generate a slug from the name if not provided
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
+DIFFICULTY_CHOICES = (
+    ("Easy", "Easy"),
+    ("Medium", "Medium"),
+    ("Hard", "Hard"),
+)
+
+
+class Question(models.Model):
+    title = models.CharField(max_length=255, help_text="The title of the problem")
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.CASCADE,
+        related_name="questions",
+        default=1,  # Default set to category with id 1 ("General")
+        help_text="Category of the problem, e.g., Arrays, Strings",
+    )
+    description = models.TextField(
+        help_text="Full problem statement with details and examples"
+    )
+    input_format = models.TextField(
+        blank=True, null=True, help_text="Description of the input format"
+    )
+    output_format = models.TextField(
+        blank=True, null=True, help_text="Description of the output format"
+    )
+    constraints = models.TextField(
+        blank=True, null=True, help_text="Constraints for the problem (if any)"
+    )
+    sample_input = models.TextField(
+        blank=True, null=True, help_text="A sample input for the problem"
+    )
+    sample_output = models.TextField(
+        blank=True, null=True, help_text="The expected output for the sample input"
+    )
+    difficulty = models.CharField(
+        max_length=10, choices=DIFFICULTY_CHOICES, default="Medium"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        # Auto-generate a slug from the title if not provided
+        if not self.slug:
+            self.slug = slugify(self.title)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title
