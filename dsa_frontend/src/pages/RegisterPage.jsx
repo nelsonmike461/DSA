@@ -1,4 +1,3 @@
-// src/pages/RegisterPage.js
 import React, { useState, useContext } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { AuthContext } from "../contexts/AuthContext";
@@ -36,7 +35,7 @@ const RegisterPage = () => {
       setError("Passwords do not match");
       return;
     }
-    setLoading(true); // start loading before making the API call
+    setLoading(true);
     try {
       await register(data);
       setSuccess("Registration successful. Please log in.");
@@ -46,7 +45,7 @@ const RegisterPage = () => {
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed");
     } finally {
-      setLoading(false); // stop loading regardless of outcome
+      setLoading(false);
     }
   };
 

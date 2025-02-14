@@ -32,7 +32,6 @@ class Category(models.Model):
     slug = models.SlugField(max_length=100, unique=True, blank=True)
 
     def save(self, *args, **kwargs):
-        # Auto-generate a slug from the name if not provided
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
@@ -70,11 +69,13 @@ class Question(models.Model):
     constraints = models.TextField(
         blank=True, null=True, help_text="Constraints for the problem (if any)"
     )
-    sample_input = models.TextField(
-        blank=True, null=True, help_text="A sample input for the problem"
+    sample_input = models.JSONField(
+        blank=True, null=True, help_text="A sample input for the problem in JSON format"
     )
-    sample_output = models.TextField(
-        blank=True, null=True, help_text="The expected output for the sample input"
+    sample_output = models.JSONField(
+        blank=True,
+        null=True,
+        help_text="The expected output for the sample input in JSON format",
     )
     difficulty = models.CharField(
         max_length=10, choices=DIFFICULTY_CHOICES, default="Medium"
@@ -83,10 +84,28 @@ class Question(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
-        # Auto-generate a slug from the title if not provided
         if not self.slug:
             self.slug = slugify(self.title)
         super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title
+
+
+class Submission(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    code = models.TextField()
+    status = models.CharField(
+        max_length=20,
+        default="Pending",
+        choices=(
+            ("Pending", "Pending"),
+            ("Running", "Running"),
+            ("Accepted", "Accepted"),
+            ("Wrong Answer", "Wrong Answer"),
+            ("Error", "Error"),
+        ),
+    )
+    result = models.JSONField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)

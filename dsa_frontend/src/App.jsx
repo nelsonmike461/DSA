@@ -2,10 +2,10 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import PublicRoute from "./components/PublicRoute";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
-import { ThemeProvider } from "@mui/material";
-import { CssBaseline } from "@mui/material";
+import { ThemeProvider, CssBaseline } from "@mui/material";
 import theme from "./theme";
 import Dashboard from "./pages/Dashboard";
 import QuestionPage from "./pages/QuestionPage";
@@ -18,9 +18,22 @@ function App() {
         <Router>
           <Routes>
             {/* Public Routes */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <LoginPage />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <PublicRoute>
+                  <RegisterPage />
+                </PublicRoute>
+              }
+            />
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<Dashboard />} />

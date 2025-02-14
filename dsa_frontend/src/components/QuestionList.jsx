@@ -1,4 +1,3 @@
-// src/components/QuestionList.js
 import React from "react";
 import {
   List,

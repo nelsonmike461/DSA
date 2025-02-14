@@ -16,6 +16,7 @@ kombu==5.4.2
 prompt_toolkit==3.0.50
 PyJWT==2.10.1
 python-dateutil==2.9.0.post0
+redis==5.0.1
 six==1.17.0
 sqlparse==0.5.3
 tzdata==2025.1

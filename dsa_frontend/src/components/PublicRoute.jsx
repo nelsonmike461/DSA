@@ -1,11 +1,11 @@
 import React, { useContext } from "react";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { AuthContext } from "../contexts/AuthContext";
 
-const ProtectedRoute = () => {
+const PublicRoute = ({ children }) => {
   const { user, loading } = useContext(AuthContext);
   if (loading) return <div>Loading...</div>;
-  return user ? <Outlet /> : <Navigate to="/login" replace />;
+  return user ? <Navigate to="/" replace /> : children;
 };
 
-export default ProtectedRoute;
+export default PublicRoute;

@@ -161,3 +161,11 @@ CORS_ALLOW_CREDENTIALS = True
 
 AXES_FAILURE_LIMIT = 5  # Lock after 5 failed attempts
 AXES_COOLOFF_TIME = timedelta(minutes=15)  # Lockout duration
+
+CELERY_BROKER_URL = "redis://localhost:6379/0"  # Instead of amqp://
+CELERY_RESULT_BACKEND = "redis://localhost:6379/0"  # Optional but recommended
+# settings.py
+
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Question, Category
+from .models import Question, Category, Submission
 
 User = get_user_model()
 
@@ -26,7 +26,6 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class QuestionSerializer(serializers.ModelSerializer):
-    # Represent the category as its name
     category = serializers.SlugRelatedField(
         queryset=Category.objects.all(), slug_field="name"
     )
@@ -47,3 +46,10 @@ class QuestionSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         )
+
+
+class SubmissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Submission
+        fields = ["id", "code", "status", "result", "created_at"]
+        read_only_fields = ["id", "status", "result", "created_at"]

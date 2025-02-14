@@ -1,2 +1,4 @@
 title,description,category,input_format,output_format,constraints,sample_input,sample_output,difficulty
-"is Unique","Implement an algorithm to determine if a string has all unique characters. What if cannot use additional data structures?","Arrays and Strings", "string", "boolean", "cannot use datastructures","#44, #177, #132","False, False, True","Medium"
+"is Unique","Implement an algorithm to determine if a string has all unique characters. What if cannot use additional data structures?","Arrays and Strings", "string", "boolean", "cannot use datastructures","[[\"apple\"], [\"bananna\"], [\"aeiou\"]]","[false, false, true]","Medium"
+
+

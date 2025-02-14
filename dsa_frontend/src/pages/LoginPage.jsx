@@ -28,14 +28,14 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    setLoading(true); // start loading
+    setLoading(true);
     try {
       await login(credentials);
       navigate("/");
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
     } finally {
-      setLoading(false); // stop loading regardless of outcome
+      setLoading(false);
     }
   };
 
@@ -69,12 +69,11 @@ const LoginPage = () => {
             onChange={handleChange}
           />
           <Button
-            // Change the variant based on the loading state:
             variant={loading ? "outlined" : "contained"}
             color="primary"
             type="submit"
             fullWidth
-            disabled={loading} // disable while loading
+            disabled={loading}
             sx={{ mt: 2 }}
           >
             {loading ? (

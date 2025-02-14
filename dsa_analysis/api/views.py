@@ -1,11 +1,33 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from .serializers import RegisterSerializer, QuestionSerializer
-from rest_framework_simplejwt.views import TokenRefreshView
 from .models import Question
+from django.shortcuts import get_object_or_404
+from .models import Submission
+from .serializers import SubmissionSerializer
+from .tasks import evaluate_submission
+
+# ------------------ Question & Submission Endpoints ------------------
+
+
+class SubmissionCreateAPIView(generics.CreateAPIView):
+    serializer_class = SubmissionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        slug = self.kwargs.get("slug")
+        question = get_object_or_404(Question, slug=slug)
+        submission = serializer.save(user=self.request.user, question=question)
+        evaluate_submission.delay(submission.id)
+
+
+class SubmissionRetrieveAPIView(generics.RetrieveAPIView):
+    serializer_class = SubmissionSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = Submission.objects.all()
 
 
 class QuestionListAPIView(generics.ListAPIView):
@@ -21,13 +43,12 @@ class QuestionListAPIView(generics.ListAPIView):
 
 
 class QuestionRetrieveAPIView(generics.RetrieveAPIView):
-    """
-    API endpoint that retrieves a single question by its slug.
-    """
-
     serializer_class = QuestionSerializer
     queryset = Question.objects.all()
     lookup_field = "slug"
+
+
+# ------------------ Authentication Endpoints ------------------
 
 
 class RegisterView(generics.CreateAPIView):
@@ -36,9 +57,10 @@ class RegisterView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
+        serializer.save()
         return Response(
-            {"message": "User created successfully."}, status=status.HTTP_201_CREATED
+            {"message": "User created successfully."},
+            status=status.HTTP_201_CREATED,
         )
 
 
@@ -52,8 +74,9 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 "access_token",
                 access_token,
                 httponly=True,
-                secure=False,
+                secure=False,  # Change to True in production with HTTPS
                 samesite="Lax",
+                path="/",
             )
             response.set_cookie(
                 "refresh_token",
@@ -61,15 +84,43 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 httponly=True,
                 secure=False,
                 samesite="Lax",
+                path="/",
             )
+        return response
+
+
+class CustomTokenRefreshView(TokenRefreshView):
+    def post(self, request, *args, **kwargs):
+        refresh_token = request.COOKIES.get("refresh_token")
+        if not refresh_token:
+            return Response(
+                {"detail": "Refresh token missing"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+        request.data["refresh"] = refresh_token
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            response.set_cookie(
+                "access_token",
+                response.data["access"],
+                httponly=True,
+                secure=False,
+                samesite="Lax",
+                path="/",
+            )
+            if "refresh" in response.data:
+                response.set_cookie(
+                    "refresh_token",
+                    response.data["refresh"],
+                    httponly=True,
+                    secure=False,
+                    samesite="Lax",
+                    path="/",
+                )
         return response
 
 
 class LogoutView(APIView):
     def post(self, request, *args, **kwargs):
-        """
-        Remove the authentication cookies to log out the user.
-        """
         response = Response(
             {"message": "Logged out successfully."}, status=status.HTTP_200_OK
         )
@@ -82,43 +133,8 @@ class CurrentUserView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        """
-        Return data for the currently authenticated user.
-        """
         user = request.user
         return Response(
-            {
-                "username": user.username,
-                # Include any additional user fields as needed.
-            },
+            {"username": user.username},
             status=status.HTTP_200_OK,
         )
-
-
-class CustomTokenRefreshView(TokenRefreshView):
-    def post(self, request, *args, **kwargs):
-        # Extract refresh token from cookie
-        refresh_token = request.COOKIES.get("refresh_token")
-
-        if not refresh_token:
-            return Response(
-                {"detail": "Refresh token missing"}, status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        # Add refresh token to request data
-        request.data["refresh"] = refresh_token
-
-        # Proceed with normal token refresh
-        response = super().post(request, *args, **kwargs)
-
-        if response.status_code == 200:
-            # Set new access token in cookie
-            response.set_cookie(
-                "access_token",
-                response.data["access"],
-                httponly=True,
-                secure=False,
-                samesite="Lax",
-            )
-
-        return response

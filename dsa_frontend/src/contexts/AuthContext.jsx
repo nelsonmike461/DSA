@@ -1,6 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback } from "react";
 import api from "../api";
-import { API_BASE_URL } from "../config";
 
 export const AuthContext = createContext();
 
@@ -8,6 +7,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Check if the user is authenticated
   const checkAuth = useCallback(async () => {
     try {
       const res = await api.get("/user");
@@ -21,10 +21,10 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  // Attempt silent refresh of tokens
   const handleSilentRefresh = useCallback(async () => {
     try {
-      // Attempt to refresh tokens silently
-      await api.post("/token/refresh/", {}, { withCredentials: true });
+      await api.post("/token/refresh/");
       return await checkAuth();
     } catch (error) {
       setUser(null);
@@ -32,6 +32,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [checkAuth]);
 
+  // Initial authentication check on mount
   useEffect(() => {
     const initializeAuth = async () => {
       const isAuthenticated = await checkAuth();
@@ -39,9 +40,21 @@ export const AuthProvider = ({ children }) => {
         await handleSilentRefresh();
       }
     };
-
     initializeAuth();
   }, [checkAuth, handleSilentRefresh]);
+
+  // Start an interval to silently refresh the token (e.g., every 4 minutes)
+  useEffect(() => {
+    let interval;
+    if (user) {
+      interval = setInterval(() => {
+        handleSilentRefresh();
+      }, 4 * 60 * 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [user, handleSilentRefresh]);
 
   const login = async (credentials) => {
     try {
@@ -64,9 +77,8 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await api.post("/logout/", {});
+      await api.post("/logout/");
       setUser(null);
-      // Force clear cookies in case of invalid token
       document.cookie =
         "access_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
       document.cookie =

@@ -7,6 +7,8 @@ from .views import (
     QuestionListAPIView,
     QuestionRetrieveAPIView,
     CustomTokenRefreshView,
+    SubmissionCreateAPIView,
+    SubmissionRetrieveAPIView,
 )
 
 urlpatterns = [
@@ -21,4 +23,14 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(), name="logout"),
     path("user/", CurrentUserView.as_view(), name="current_user"),
     path("token/refresh/", CustomTokenRefreshView.as_view(), name="token_refresh"),
+    path(
+        "questions/<slug:slug>/submissions/",
+        SubmissionCreateAPIView.as_view(),
+        name="submission-create",
+    ),
+    path(
+        "submissions/<int:pk>/",
+        SubmissionRetrieveAPIView.as_view(),
+        name="submission-retrieve",
+    ),
 ]

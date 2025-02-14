@@ -1,4 +1,3 @@
-// src/pages/Dashboard.js
 import React, { useState, useEffect } from "react";
 import { Box, Typography } from "@mui/material";
 import Grid from "@mui/material/Grid2";
@@ -8,7 +7,6 @@ import axios from "axios";
 import { API_BASE_URL } from "../config";
 
 const Dashboard = () => {
-  // Default category is now "Arrays & Strings"
   const [selectedCategory, setSelectedCategory] =
     useState("Arrays and Strings");
   const [questions, setQuestions] = useState([]);

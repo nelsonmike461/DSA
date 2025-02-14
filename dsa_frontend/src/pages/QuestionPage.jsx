@@ -1,24 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Box, Typography, Paper, Button, Alert, Stack } from "@mui/material";
-import axios from "axios";
 import Grid from "@mui/material/Grid2";
-import { API_BASE_URL } from "../config";
 import Editor from "@monaco-editor/react";
+import api from "../api";
 
 const QuestionPage = () => {
   const { slug } = useParams();
+  const [code, setCode] = useState();
   const [question, setQuestion] = useState(null);
-  const [code, setCode] = useState("// Write your solution here...");
   const [submissionResult, setSubmissionResult] = useState(null);
 
   useEffect(() => {
     const fetchQuestion = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/questions/${slug}/`);
+        const res = await api.get(`/questions/${slug}/`);
         setQuestion(res.data);
       } catch (error) {
-        console.error("Error fetching question", error);
+        console.error("Error fetching question:", error);
       }
     };
     fetchQuestion();
@@ -26,14 +25,37 @@ const QuestionPage = () => {
 
   const handleSubmit = async () => {
     try {
-      const res = await axios.post(`${API_BASE_URL}/submissions/`, {
-        question_slug: slug,
-        code,
-      });
-      setSubmissionResult(res.data);
+      const res = await api.post(`/questions/${slug}/submissions/`, { code });
+      const submissionId = res.data.id;
+      setSubmissionResult({ verdict: "Pending", message: "Processing..." });
+
+      const checkResult = async () => {
+        try {
+          const resultRes = await api.get(`/submissions/${submissionId}/`);
+          if (["Pending", "Running"].includes(resultRes.data.status)) {
+            setTimeout(checkResult, 2000);
+          } else {
+            setSubmissionResult({
+              verdict: resultRes.data.status,
+              message:
+                resultRes.data.result?.error ||
+                (resultRes.data.status === "Accepted"
+                  ? "All test cases passed!"
+                  : "Test cases failed"),
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching result:", error);
+          setSubmissionResult({
+            verdict: "Error",
+            message: "Result check failed",
+          });
+        }
+      };
+      checkResult();
     } catch (error) {
-      console.error("Error submitting code", error);
-      setSubmissionResult({ verdict: "Error", message: "Submission failed." });
+      console.error("Submission error:", error);
+      setSubmissionResult({ verdict: "Error", message: "Submission failed" });
     }
   };
 
@@ -45,14 +67,8 @@ const QuestionPage = () => {
     <Grid
       container
       spacing={0}
-      sx={{
-        width: "100vw",
-        height: "100vh",
-        m: 0,
-        p: 0,
-      }}
+      sx={{ width: "100vw", height: "100vh", m: 0, p: 0 }}
     >
-      {/* Left Side: Question Details */}
       <Grid
         item
         xs={6}
@@ -61,16 +77,10 @@ const QuestionPage = () => {
           maxWidth: "50%",
           height: "100%",
           overflowY: "auto",
-          borderRight: "1px solid #ccc", // Optional visual divider
+          borderRight: "1px solid #ccc",
         }}
       >
-        <Paper
-          sx={{
-            p: 3,
-            height: "100%",
-            backgroundColor: "#FFE5B4", // Peach background for left panel
-          }}
-        >
+        <Paper sx={{ p: 3, height: "100%", backgroundColor: "#FFE5B4" }}>
           <Stack spacing={2}>
             <Typography variant="h5" gutterBottom>
               {question.title}
@@ -117,17 +127,10 @@ const QuestionPage = () => {
           </Stack>
         </Paper>
       </Grid>
-
-      {/* Right Side: Coding Environment */}
       <Grid
         item
         xs={6}
-        sx={{
-          flex: "0 0 50%",
-          maxWidth: "50%",
-          height: "100%",
-          overflow: "hidden",
-        }}
+        sx={{ flex: "0 0 50%", maxWidth: "50%", height: "100%" }}
       >
         <Paper
           sx={{
@@ -135,27 +138,25 @@ const QuestionPage = () => {
             height: "100%",
             display: "flex",
             flexDirection: "column",
-            // backgroundColor: "#000000", // Black background for right panel
-            color: "#FFFFFF", // Ensure text (if any) appears in white
+            color: "#FFFFFF",
           }}
         >
-          <Editor
-            // theme="vs-dark" // Editor theme (vs-dark works well on a black background)
-            height="calc(100% - 80px)" // Adjust height to leave room for the submit area
-            defaultLanguage="python"
-            value={code}
-            onChange={(value) => setCode(value)}
-            options={{
-              minimap: { enabled: false },
-              fontSize: 14,
-            }}
-          />
-          <Box sx={{ mt: 2, display: "flex", flexDirection: "column", gap: 1 }}>
+          <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
+            <Editor
+              height="100%"
+              defaultLanguage="python"
+              value={code}
+              onChange={(value) => setCode(value)}
+              options={{ minimap: { enabled: false }, fontSize: 14 }}
+            />
+          </Box>
+          <Box sx={{ mt: 2 }}>
             <Button variant="contained" onClick={handleSubmit}>
               Submit Code
             </Button>
             {submissionResult && (
               <Alert
+                sx={{ mt: 1 }}
                 severity={
                   submissionResult.verdict === "Accepted" ? "success" : "error"
                 }
