@@ -80,6 +80,9 @@ class Question(models.Model):
     difficulty = models.CharField(
         max_length=10, choices=DIFFICULTY_CHOICES, default="Medium"
     )
+    hints = models.TextField(
+        blank=True, null=True, help_text="Hints for solving the problem"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

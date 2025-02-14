@@ -7,11 +7,12 @@ import api from "../api";
 
 const QuestionPage = () => {
   const { slug } = useParams();
-  const [code, setCode] = useState();
+  const [code, setCode] = useState("");
   const [question, setQuestion] = useState(null);
   const [submissionResult, setSubmissionResult] = useState(null);
 
   useEffect(() => {
+    // Fetch the question details when the component mounts or slug changes
     const fetchQuestion = async () => {
       try {
         const res = await api.get(`/questions/${slug}/`);
@@ -27,32 +28,52 @@ const QuestionPage = () => {
     try {
       const res = await api.post(`/questions/${slug}/submissions/`, { code });
       const submissionId = res.data.id;
+
       setSubmissionResult({ verdict: "Pending", message: "Processing..." });
 
-      const checkResult = async () => {
+      // Poll every 2 seconds for the submission result
+      const checkResult = async (id) => {
         try {
-          const resultRes = await api.get(`/submissions/${submissionId}/`);
+          const resultRes = await api.get(`/submissions/${id}/`);
           if (["Pending", "Running"].includes(resultRes.data.status)) {
-            setTimeout(checkResult, 2000);
+            setTimeout(() => checkResult(id), 2000);
           } else {
+            // Decide how to display the final result:
+            let finalMessage;
+            if (Array.isArray(resultRes.data.result)) {
+              // If the result is an array, check if all test cases passed:
+              const allPassed = resultRes.data.result.every(
+                (test) => test.passed === true
+              );
+              if (allPassed) {
+                finalMessage = "All test cases passed";
+              } else {
+                // Otherwise, show the entire array
+                finalMessage = JSON.stringify(resultRes.data.result);
+              }
+            } else if (typeof resultRes.data.result === "string") {
+              // If it's a string, just show it
+              finalMessage = resultRes.data.result;
+            } else {
+              // If it's some other type (object, etc.), stringify it
+              finalMessage = JSON.stringify(resultRes.data.result);
+            }
+
             setSubmissionResult({
               verdict: resultRes.data.status,
-              message:
-                resultRes.data.result?.error ||
-                (resultRes.data.status === "Accepted"
-                  ? "All test cases passed!"
-                  : "Test cases failed"),
+              message: finalMessage,
             });
           }
         } catch (error) {
-          console.error("Error fetching result:", error);
+          console.error("Error fetching submission result:", error);
           setSubmissionResult({
             verdict: "Error",
-            message: "Result check failed",
+            message: "Failed to check result",
           });
         }
       };
-      checkResult();
+
+      checkResult(submissionId);
     } catch (error) {
       console.error("Submission error:", error);
       setSubmissionResult({ verdict: "Error", message: "Submission failed" });
@@ -63,12 +84,29 @@ const QuestionPage = () => {
     return <Typography sx={{ p: 2 }}>Loading question...</Typography>;
   }
 
+  // Helper function to display array fields on a single line
+  const formatField = (field) => {
+    if (Array.isArray(field)) {
+      return field.join(" ");
+    }
+    return field;
+  };
+
+  // split hints line-by-line
+  const hintsArray = question.hints
+    ? question.hints
+        .split(/(?=\d+\.)/)
+        .map((hint) => hint.trim())
+        .filter(Boolean)
+    : [];
+
   return (
     <Grid
       container
       spacing={0}
       sx={{ width: "100vw", height: "100vh", m: 0, p: 0 }}
     >
+      {/* LEFT PANEL */}
       <Grid
         item
         xs={6}
@@ -88,12 +126,14 @@ const QuestionPage = () => {
             <Typography variant="body1" gutterBottom>
               {question.description}
             </Typography>
+
             {question.input_format && (
               <Stack spacing={1}>
                 <Typography variant="subtitle1">Input Format:</Typography>
                 <Typography variant="body2">{question.input_format}</Typography>
               </Stack>
             )}
+
             {question.output_format && (
               <Stack spacing={1}>
                 <Typography variant="subtitle1">Output Format:</Typography>
@@ -102,31 +142,47 @@ const QuestionPage = () => {
                 </Typography>
               </Stack>
             )}
+
             {question.constraints && (
               <Stack spacing={1}>
                 <Typography variant="subtitle1">Constraints:</Typography>
                 <Typography variant="body2">{question.constraints}</Typography>
               </Stack>
             )}
+
             {question.sample_input && (
               <Stack spacing={1}>
                 <Typography variant="subtitle1">Sample Input:</Typography>
-                <Typography variant="body2" component="pre">
-                  {question.sample_input}
+                <Typography variant="body2">
+                  {formatField(question.sample_input)}
                 </Typography>
               </Stack>
             )}
+
             {question.sample_output && (
               <Stack spacing={1}>
                 <Typography variant="subtitle1">Sample Output:</Typography>
-                <Typography variant="body2" component="pre">
-                  {question.sample_output}
+                <Typography variant="body2">
+                  {formatField(question.sample_output)}
                 </Typography>
+              </Stack>
+            )}
+
+            {hintsArray.length > 0 && (
+              <Stack spacing={1}>
+                <Typography variant="subtitle1">Hints:</Typography>
+                {hintsArray.map((hint, index) => (
+                  <Typography key={index} variant="body2">
+                    {hint}
+                  </Typography>
+                ))}
               </Stack>
             )}
           </Stack>
         </Paper>
       </Grid>
+
+      {/* RIGHT PANEL */}
       <Grid
         item
         xs={6}
@@ -141,6 +197,7 @@ const QuestionPage = () => {
             color: "#FFFFFF",
           }}
         >
+          {/* Code Editor */}
           <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
             <Editor
               height="100%"
@@ -150,6 +207,8 @@ const QuestionPage = () => {
               options={{ minimap: { enabled: false }, fontSize: 14 }}
             />
           </Box>
+
+          {/* Submit Button + Result */}
           <Box sx={{ mt: 2 }}>
             <Button variant="contained" onClick={handleSubmit}>
               Submit Code

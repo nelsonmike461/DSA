@@ -43,6 +43,7 @@ class QuestionSerializer(serializers.ModelSerializer):
             "sample_input",
             "sample_output",
             "difficulty",
+            "hints",
             "created_at",
             "updated_at",
         )
