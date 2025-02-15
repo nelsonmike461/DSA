@@ -1,4 +1,3 @@
-// src/components/QuestionList.js
 import React from "react";
 import {
   List,
@@ -13,10 +12,19 @@ import { Link } from "react-router-dom";
 const QuestionList = ({ questions }) => {
   return (
     <div>
-      <Typography variant="h6" sx={{ p: 2 }}>
+      <Typography
+        variant="h6"
+        sx={{
+          p: 2,
+          position: "sticky",
+          top: 0,
+          backgroundColor: "#FFEFD5",
+          zIndex: 1,
+        }}
+      >
         Questions
       </Typography>
-      <Divider />
+      <Divider sx={{ position: "sticky", top: 0 }} />
       <List>
         {questions.map((question) => (
           <ListItem key={question.slug} disablePadding>

@@ -7,7 +7,7 @@ import api from "../api";
 
 const QuestionPage = () => {
   const { slug } = useParams();
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState("# write your solution heree...");
   const [question, setQuestion] = useState(null);
   const [submissionResult, setSubmissionResult] = useState(null);
 
@@ -119,7 +119,7 @@ const QuestionPage = () => {
         }}
       >
         <Paper sx={{ p: 3, height: "100%", backgroundColor: "#FFE5B4" }}>
-          <Stack spacing={2}>
+          <Stack spacing={1}>
             <Typography variant="h5" gutterBottom>
               {question.title}
             </Typography>
@@ -128,14 +128,14 @@ const QuestionPage = () => {
             </Typography>
 
             {question.input_format && (
-              <Stack spacing={1}>
+              <Stack spacing={0.5}>
                 <Typography variant="subtitle1">Input Format:</Typography>
                 <Typography variant="body2">{question.input_format}</Typography>
               </Stack>
             )}
 
             {question.output_format && (
-              <Stack spacing={1}>
+              <Stack spacing={0.5}>
                 <Typography variant="subtitle1">Output Format:</Typography>
                 <Typography variant="body2">
                   {question.output_format}
@@ -144,7 +144,7 @@ const QuestionPage = () => {
             )}
 
             {question.constraints && (
-              <Stack spacing={1}>
+              <Stack spacing={0.5}>
                 <Typography variant="subtitle1">Constraints:</Typography>
                 <Typography variant="body2">{question.constraints}</Typography>
               </Stack>
@@ -169,7 +169,7 @@ const QuestionPage = () => {
             )}
 
             {hintsArray.length > 0 && (
-              <Stack spacing={1}>
+              <Stack spacing={0.5}>
                 <Typography variant="subtitle1">Hints:</Typography>
                 {hintsArray.map((hint, index) => (
                   <Typography key={index} variant="body2">

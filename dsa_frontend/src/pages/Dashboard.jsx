@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Box, Typography } from "@mui/material";
-import Grid from "@mui/material/Grid2";
 import CategorySidebar from "../components/CategorySidebar";
 import QuestionList from "../components/QuestionList";
 import axios from "axios";
@@ -28,24 +27,42 @@ const Dashboard = () => {
   }, [selectedCategory]);
 
   return (
-    <Box sx={{ flexGrow: 1, p: 2 }}>
-      <Grid container spacing={2}>
-        <Grid item xs={12} sm={4} md={3}>
-          <CategorySidebar
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
-          />
-        </Grid>
-        <Grid item xs={12} sm={8} md={9}>
-          {questions.length ? (
-            <QuestionList questions={questions} />
-          ) : (
-            <Typography variant="body1" sx={{ p: 2 }}>
-              No questions available for this category.
-            </Typography>
-          )}
-        </Grid>
-      </Grid>
+    <Box
+      sx={{
+        display: "flex",
+        height: "100vh", // Ensures the dashboard fills the viewport height
+        overflow: "hidden", // Prevents the entire page from scrolling
+      }}
+    >
+      {/* Sidebar Section */}
+      <Box
+        sx={{
+          width: { xs: "100%", md: "25%" },
+          overflowY: "auto", // If sidebar content overflows, scroll only the sidebar
+          borderRight: "1px solid #ccc",
+        }}
+      >
+        <CategorySidebar
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+        />
+      </Box>
+
+      {/* Main Content Section */}
+      <Box
+        sx={{
+          flex: 1,
+          overflowY: "auto", // Only this area scrolls if content overflows
+        }}
+      >
+        {questions.length ? (
+          <QuestionList questions={questions} />
+        ) : (
+          <Typography variant="body1" sx={{ p: 2 }}>
+            No questions available for this category.
+          </Typography>
+        )}
+      </Box>
     </Box>
   );
 };
