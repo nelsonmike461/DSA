@@ -1,11 +1,13 @@
 import React, { createContext, useState, useEffect, useCallback } from "react";
 import api from "../api";
+import { useNavigate } from "react-router-dom";
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   // Check if the user is authenticated
   const checkAuth = useCallback(async () => {
@@ -24,7 +26,7 @@ export const AuthProvider = ({ children }) => {
   // Attempt silent refresh of tokens
   const handleSilentRefresh = useCallback(async () => {
     try {
-      await api.post("/token/refresh/");
+      await api.post("/token/refresh/", {}, { withCredentials: true });
       return await checkAuth();
     } catch (error) {
       setUser(null);
@@ -32,9 +34,16 @@ export const AuthProvider = ({ children }) => {
     }
   }, [checkAuth]);
 
-  // Initial authentication check on mount
+  // Initialize auth only if tokens are present
   useEffect(() => {
     const initializeAuth = async () => {
+      if (
+        !document.cookie.includes("access_token") &&
+        !document.cookie.includes("refresh_token")
+      ) {
+        setLoading(false);
+        return;
+      }
       const isAuthenticated = await checkAuth();
       if (!isAuthenticated) {
         await handleSilentRefresh();
@@ -42,19 +51,6 @@ export const AuthProvider = ({ children }) => {
     };
     initializeAuth();
   }, [checkAuth, handleSilentRefresh]);
-
-  // Start an interval to silently refresh the token (e.g., every 4 minutes)
-  useEffect(() => {
-    let interval;
-    if (user) {
-      interval = setInterval(() => {
-        handleSilentRefresh();
-      }, 4 * 60 * 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [user, handleSilentRefresh]);
 
   const login = async (credentials) => {
     try {
@@ -78,14 +74,9 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await api.post("/logout/");
+    } finally {
       setUser(null);
-      document.cookie =
-        "access_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-      document.cookie =
-        "refresh_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-    } catch (error) {
-      console.error("Logout error:", error);
-      throw error;
+      navigate("/login");
     }
   };
 

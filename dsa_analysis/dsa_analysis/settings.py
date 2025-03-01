@@ -138,15 +138,18 @@ REST_FRAMEWORK = {
     ),
 }
 
+# settings.py
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
-    "ROTATE_REFRESH_TOKENS": True,  # Important for security
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_COOKIE": "access_token",
-    "AUTH_COOKIE_SECURE": not DEBUG,  # True in production
+    "AUTH_COOKIE_SECURE": not DEBUG,
     "AUTH_COOKIE_HTTP_ONLY": True,
     "AUTH_COOKIE_SAMESITE": "Lax",
     "AUTH_COOKIE_PATH": "/",
+    "AUTH_COOKIE_DOMAIN": None,
 }
 
 

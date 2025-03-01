@@ -4,6 +4,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from .serializers import RegisterSerializer, QuestionSerializer
+from django.conf import settings
 from .models import Question
 from django.shortcuts import get_object_or_404
 from .models import Submission
@@ -89,6 +90,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         return response
 
 
+# views.py
 class CustomTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
         refresh_token = request.COOKIES.get("refresh_token")
@@ -99,20 +101,22 @@ class CustomTokenRefreshView(TokenRefreshView):
         request.data["refresh"] = refresh_token
         response = super().post(request, *args, **kwargs)
         if response.status_code == 200:
+            # Set new access token cookie
             response.set_cookie(
                 "access_token",
                 response.data["access"],
                 httponly=True,
-                secure=False,
+                secure=not settings.DEBUG,
                 samesite="Lax",
                 path="/",
             )
+            # Optionally rotate refresh token
             if "refresh" in response.data:
                 response.set_cookie(
                     "refresh_token",
                     response.data["refresh"],
                     httponly=True,
-                    secure=False,
+                    secure=not settings.DEBUG,
                     samesite="Lax",
                     path="/",
                 )
