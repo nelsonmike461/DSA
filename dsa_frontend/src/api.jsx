@@ -9,20 +9,28 @@ const api = axios.create({
 let isRefreshing = false;
 let failedRequests = [];
 
-// Interceptor to handle 401 errors and refresh tokens.
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // If error comes from the refresh endpoint, do not retry, redirect to login.
+    // If error comes from the refresh endpoint, redirect to login.
     if (originalRequest.url.includes("/token/refresh/")) {
       window.location.href = "/login";
       return Promise.reject(error);
     }
 
+    // If 401 and not already retried, then try to refresh tokens.
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
+
+      // Avoid refreshing if already on login or register pages.
+      if (
+        window.location.pathname === "/login" ||
+        window.location.pathname === "/register"
+      ) {
+        return Promise.reject(error);
+      }
 
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -44,7 +52,6 @@ api.interceptors.response.use(
       } catch (refreshError) {
         failedRequests.forEach((promise) => promise.reject(refreshError));
         failedRequests = [];
-        // If refreshing fails, redirect to login.
         window.location.href = "/login";
         return Promise.reject(refreshError);
       } finally {

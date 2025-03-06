@@ -1,15 +1,19 @@
 import React, { createContext, useState, useEffect, useCallback } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import api from "../api";
-import { useNavigate } from "react-router-dom";
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  // A flag to ensure we only try silent refresh once per mount.
+  const [hasAttemptedSilentRefresh, setHasAttemptedSilentRefresh] =
+    useState(false);
+  const location = useLocation();
   const navigate = useNavigate();
 
-  // Check if the user is authenticated
+  // Function to check authentication status via the /user endpoint.
   const checkAuth = useCallback(async () => {
     try {
       const res = await api.get("/user");
@@ -18,12 +22,10 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       setUser(null);
       return false;
-    } finally {
-      setLoading(false);
     }
   }, []);
 
-  // Attempt silent refresh of tokens
+  // Function to silently refresh tokens.
   const handleSilentRefresh = useCallback(async () => {
     try {
       await api.post("/token/refresh/", {}, { withCredentials: true });
@@ -34,23 +36,26 @@ export const AuthProvider = ({ children }) => {
     }
   }, [checkAuth]);
 
-  // Initialize auth only if tokens are present
+  // contexts/AuthContext.jsx
   useEffect(() => {
     const initializeAuth = async () => {
-      if (
-        !document.cookie.includes("access_token") &&
-        !document.cookie.includes("refresh_token")
-      ) {
+      if (location.pathname === "/login" || location.pathname === "/register") {
         setLoading(false);
         return;
       }
-      const isAuthenticated = await checkAuth();
-      if (!isAuthenticated) {
-        await handleSilentRefresh();
+
+      try {
+        await checkAuth(); // Interceptor handles token refresh if needed
+      } catch (error) {
+        setUser(null);
+        navigate("/login");
+      } finally {
+        setLoading(false);
       }
     };
+
     initializeAuth();
-  }, [checkAuth, handleSilentRefresh]);
+  }, [checkAuth, location.pathname, navigate]);
 
   const login = async (credentials) => {
     try {
