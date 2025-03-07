@@ -11,7 +11,7 @@ import {
 const categories = [
   "Arrays and Strings",
   "Linked Lists",
-  "Trees",
+  "Stacks and Queues",
   "Graphs",
   "Dynamic Programming",
 ];
